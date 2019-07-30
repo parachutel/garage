@@ -45,9 +45,9 @@ def test_policy_get_actions(mock_model, input_dim, output_dim, hidden_sizes):
     policy = GaussianMLPPolicy(env_spec, mock_model)
 
     input = torch.ones(input_dim)
-    sample = policy.get_actions(input)
+    sample, _ = policy.get_actions(input)
 
-    assert np.array_equal(sample, action.detach().numpy())
+    assert np.array_equal(sample, action.numpy())
 
 
 @pytest.mark.parametrize('input_dim, output_dim, hidden_sizes', test_settings)
@@ -70,6 +70,6 @@ def test_policy_get_action(mock_model, input_dim, output_dim, hidden_sizes):
     policy = GaussianMLPPolicy(env_spec, mock_model)
 
     input = torch.ones(input_dim)
-    sample = policy.get_action(input)
+    sample, _ = policy.get_action(input)
 
-    assert np.array_equal(sample, np.squeeze(action.detach().numpy()))
+    assert np.array_equal(sample, np.squeeze(action.numpy()))
