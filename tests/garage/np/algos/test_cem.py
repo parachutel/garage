@@ -21,8 +21,6 @@ class TestCEM(TfGraphTestCase):
 
             baseline = LinearFeatureBaseline(env_spec=env.spec)
 
-            runner.initialize_tf_vars()
-
             n_samples = 10
 
             algo = CEM(

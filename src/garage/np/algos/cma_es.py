@@ -40,16 +40,19 @@ class CMAES(BatchPolopt):
 
         self.sigma0 = sigma0
 
-        init_mean = self.policy.get_param_values()
-        self.es = cma.CMAEvolutionStrategy(init_mean, sigma0)
+    def sample_params(self):
+        return self.es.ask(self.n_samples)
 
+    def train(self, runner, batch_size):
+        # Initialize variables before training
+        init_mean = self.policy.get_param_values()
+        self.es = cma.CMAEvolutionStrategy(init_mean, self.sigma0)
         self.all_params = self.sample_params()
         self.cur_params = self.all_params[0]
         self.policy.set_param_values(self.cur_params)
         self.all_returns = []
 
-    def sample_params(self):
-        return self.es.ask(self.n_samples)
+        return super().train(runner, batch_size)
 
     def train_once(self, itr, paths):
         paths = self.process_samples(itr, paths)

@@ -53,23 +53,12 @@ class CEM(BatchPolopt):
                          n_samples)
         self.env_spec = env_spec
 
+        self.n_samples = n_samples
+        self.best_frac = best_frac
         self.init_std = init_std
         self.best_frac = best_frac
         self.extra_std = extra_std
         self.extra_decay_time = extra_decay_time
-
-        # epoch-wise
-        self.cur_std = self.init_std
-        self.cur_mean = self.policy.get_param_values()
-        # epoch-cycle-wise
-        self.cur_params = self.cur_mean
-        self.all_returns = []
-        self.all_params = [self.cur_mean.copy()]
-        # fixed
-        self.n_best = int(n_samples * best_frac)
-        assert self.n_best >= 1, (
-            'n_samples is too low. Make sure that n_samples * best_frac >= 1')
-        self.n_params = len(self.cur_mean)
 
     def sample_params(self, epoch):
         extra_var_mult = max(1.0 - epoch / self.extra_decay_time, 0)
@@ -78,6 +67,23 @@ class CEM(BatchPolopt):
             np.square(self.extra_std) * extra_var_mult)
         return np.random.standard_normal(
             self.n_params) * sample_std + self.cur_mean
+
+    def train(self, runner, batch_size):
+        # Initialize variables before training
+        # epoch-wise
+        self.cur_std = self.init_std
+        self.cur_mean = self.policy.get_param_values()
+        # epoch-cycle-wise
+        self.cur_params = self.cur_mean
+        self.all_returns = []
+        self.all_params = [self.cur_mean.copy()]
+        # constant
+        self.n_best = int(self.n_samples * self.best_frac)
+        assert self.n_best >= 1, (
+            'n_samples is too low. Make sure that n_samples * best_frac >= 1')
+        self.n_params = len(self.cur_mean)
+
+        return super().train(runner, batch_size)
 
     def train_once(self, itr, paths):
         paths = self.process_samples(itr, paths)

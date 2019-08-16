@@ -27,8 +27,6 @@ def run_task(snapshot_config, *_):
 
         baseline = LinearFeatureBaseline(env_spec=env.spec)
 
-        runner.initialize_tf_vars()
-
         n_samples = 20
 
         algo = CMAES(
