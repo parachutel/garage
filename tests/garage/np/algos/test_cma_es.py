@@ -18,17 +18,17 @@ class TestCMAES(TfGraphTestCase):
 
             baseline = LinearFeatureBaseline(env_spec=env.spec)
 
-            n_samples = 20
+            n_epoch_cycles = 20
 
             algo = CMAES(
                 env_spec=env.spec,
                 policy=policy,
                 baseline=baseline,
-                max_path_length=100,
-                n_samples=n_samples)
+                max_path_length=100)
 
             runner.setup(algo, env, sampler_cls=OnPolicyVectorizedSampler)
-            runner.train(n_epochs=1, batch_size=1000, n_epoch_cycles=n_samples)
+            runner.train(
+                n_epochs=1, batch_size=1000, n_epoch_cycles=n_epoch_cycles)
             # No assertion on return because CMAES is not stable.
 
             env.close()

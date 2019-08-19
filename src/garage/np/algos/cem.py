@@ -28,7 +28,6 @@ class CEM(BatchPolopt):
         policy (garage.np.policies.Policy): Action policy.
         baseline(garage.np.baselines.Baseline): Baseline for GAE
             (Generalized Advantage Estimation).
-        n_samples (int): Number of policies sampled in one epoch.
         discount (float): Environment reward discount.
         max_path_length (int): Maximum length of a single rollout.
         best_frac (float): The best fraction.
@@ -42,18 +41,15 @@ class CEM(BatchPolopt):
                  env_spec,
                  policy,
                  baseline,
-                 n_samples,
                  discount=0.99,
                  max_path_length=500,
                  init_std=1,
                  best_frac=0.05,
                  extra_std=1.,
                  extra_decay_time=100):
-        super().__init__(policy, baseline, discount, max_path_length,
-                         n_samples)
+        super().__init__(policy, baseline, discount, max_path_length)
         self.env_spec = env_spec
 
-        self.n_samples = n_samples
         self.best_frac = best_frac
         self.init_std = init_std
         self.best_frac = best_frac
@@ -69,6 +65,8 @@ class CEM(BatchPolopt):
             self.n_params) * sample_std + self.cur_mean
 
     def train(self, runner, batch_size):
+        self.n_epoch_cycles = runner.train_args.n_epoch_cycles
+
         # Initialize variables before training
         # epoch-wise
         self.cur_std = self.init_std
@@ -78,18 +76,28 @@ class CEM(BatchPolopt):
         self.all_returns = []
         self.all_params = [self.cur_mean.copy()]
         # constant
-        self.n_best = int(self.n_samples * self.best_frac)
+        self.n_best = int(self.n_epoch_cycles * self.best_frac)
         assert self.n_best >= 1, (
             'n_samples is too low. Make sure that n_samples * best_frac >= 1')
         self.n_params = len(self.cur_mean)
 
-        return super().train(runner, batch_size)
+        last_return = None
+
+        for epoch in runner.step_epochs():
+            for cycle in range(self.n_epoch_cycles):
+                runner.step_path = runner.obtain_samples(
+                    runner.step_itr, batch_size)
+                last_return = self.train_once(runner.step_itr,
+                                              runner.step_path)
+                runner.step_itr += 1
+
+        return last_return
 
     def train_once(self, itr, paths):
         paths = self.process_samples(itr, paths)
 
-        epoch = itr // self.n_samples
-        i_sample = itr - epoch * self.n_samples
+        epoch = itr // self.n_epoch_cycles
+        i_sample = itr - epoch * self.n_epoch_cycles
         tabular.record('Epoch', epoch)
         tabular.record('# Sample', i_sample)
         # -- Stage: Process path
@@ -97,7 +105,7 @@ class CEM(BatchPolopt):
         self.all_returns.append(paths['average_return'])
 
         # -- Stage: Update policy distribution.
-        if (itr + 1) % self.n_samples == 0:
+        if (itr + 1) % self.n_epoch_cycles == 0:
             avg_rtns = np.array(self.all_returns)
             best_inds = np.argsort(-avg_rtns)[:self.n_best]
             best_params = np.array(self.all_params)[best_inds]

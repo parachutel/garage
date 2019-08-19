@@ -18,7 +18,6 @@ class CMAES(BatchPolopt):
         policy (garage.np.policies.Policy): Action policy.
         baseline (garage.np.baselines.Baseline): Baseline for GAE
             (Generalized Advantage Estimation).
-        n_samples (int): Number of policies sampled in one epoch.
         discount (float): Environment reward discount.
         max_path_length (int): Maximum length of a single rollout.
         sigma0 (float): Initial std for param distribution.
@@ -29,21 +28,21 @@ class CMAES(BatchPolopt):
                  env_spec,
                  policy,
                  baseline,
-                 n_samples,
                  discount=0.99,
                  max_path_length=500,
                  sigma0=1.):
-        super().__init__(policy, baseline, discount, max_path_length,
-                         n_samples)
+        super().__init__(policy, baseline, discount, max_path_length)
         self.env_spec = env_spec
         self.policy = policy
 
         self.sigma0 = sigma0
 
     def sample_params(self):
-        return self.es.ask(self.n_samples)
+        return self.es.ask(self.n_epoch_cycles)
 
     def train(self, runner, batch_size):
+        self.n_epoch_cycles = runner.train_args.n_epoch_cycles
+
         # Initialize variables before training
         init_mean = self.policy.get_param_values()
         self.es = cma.CMAEvolutionStrategy(init_mean, self.sigma0)
@@ -52,13 +51,23 @@ class CMAES(BatchPolopt):
         self.policy.set_param_values(self.cur_params)
         self.all_returns = []
 
-        return super().train(runner, batch_size)
+        last_return = None
+
+        for epoch in runner.step_epochs():
+            for cycle in range(self.n_epoch_cycles):
+                runner.step_path = runner.obtain_samples(
+                    runner.step_itr, batch_size)
+                last_return = self.train_once(runner.step_itr,
+                                              runner.step_path)
+                runner.step_itr += 1
+
+        return last_return
 
     def train_once(self, itr, paths):
         paths = self.process_samples(itr, paths)
 
-        epoch = itr // self.n_samples
-        i_sample = itr - epoch * self.n_samples
+        epoch = itr // self.n_epoch_cycles
+        i_sample = itr - epoch * self.n_epoch_cycles
 
         tabular.record('Epoch', epoch)
         tabular.record('# Sample', i_sample)
@@ -66,7 +75,7 @@ class CMAES(BatchPolopt):
         rtn = paths['average_return']
         self.all_returns.append(paths['average_return'])
 
-        if (itr + 1) % self.n_samples == 0:
+        if (itr + 1) % self.n_epoch_cycles == 0:
             avg_rtns = np.array(self.all_returns)
             self.es.tell(self.all_params, -avg_rtns)
             self.policy.set_param_values(self.es.result()[0])
@@ -76,7 +85,7 @@ class CMAES(BatchPolopt):
             self.all_returns.clear()
             self.all_params = self.sample_params()
 
-        self.cur_params = self.all_params[(i_sample + 1) % self.n_samples]
+        self.cur_params = self.all_params[(i_sample + 1) % self.n_epoch_cycles]
         self.policy.set_param_values(self.cur_params)
 
         logger.log(tabular)

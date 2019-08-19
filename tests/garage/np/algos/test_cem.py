@@ -21,19 +21,18 @@ class TestCEM(TfGraphTestCase):
 
             baseline = LinearFeatureBaseline(env_spec=env.spec)
 
-            n_samples = 10
+            n_epoch_cycles = 10
 
             algo = CEM(
                 env_spec=env.spec,
                 policy=policy,
                 baseline=baseline,
                 best_frac=0.1,
-                max_path_length=100,
-                n_samples=n_samples)
+                max_path_length=100)
 
             runner.setup(algo, env, sampler_cls=OnPolicyVectorizedSampler)
             rtn = runner.train(
-                n_epochs=10, batch_size=2048, n_epoch_cycles=n_samples)
+                n_epochs=10, batch_size=2048, n_epoch_cycles=n_epoch_cycles)
             assert rtn > 40
 
             env.close()
