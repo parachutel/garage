@@ -4,8 +4,8 @@ import collections
 import akro
 import glfw
 import gym
-from gym.envs.classic_control.rendering import SimpleImageViewer
-from gym.envs.classic_control.rendering import Viewer
+# from gym.envs.classic_control.rendering import SimpleImageViewer
+# from gym.envs.classic_control.rendering import Viewer
 
 from garage.core import Serializable
 from garage.envs.env_spec import EnvSpec
@@ -84,6 +84,8 @@ class GarageEnv(gym.Wrapper, Serializable):
         This method can be removed once OpenAI solves the issue.
         """
         if self.env.spec:
+            # from gym.envs.classic_control.rendering import SimpleImageViewer
+            # from gym.envs.classic_control.rendering import Viewer
             if any(package in self.env.spec._entry_point
                    for package in KNOWN_GYM_NOT_CLOSE_MJ_VIEWER):
                 # This import is not in the header to avoid a MuJoCo dependency
@@ -95,8 +97,8 @@ class GarageEnv(gym.Wrapper, Serializable):
             elif any(package in self.env.spec._entry_point
                      for package in KNOWN_GYM_NOT_CLOSE_VIEWER):
                 if (hasattr(self.env, 'viewer') and
-                    (isinstance(self.env.viewer, Viewer)
-                     or isinstance(self.env.viewer, SimpleImageViewer))):
+                    (isinstance(self.env.viewer, gym.envs.classic_control.rendering.Viewer)
+                     or isinstance(self.env.viewer, gym.envs.classic_control.rendering.SimpleImageViewer))):
                     self.env.viewer.close()
 
     def reset(self, **kwargs):
