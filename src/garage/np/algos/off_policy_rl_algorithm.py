@@ -1,6 +1,6 @@
 from garage.np.algos import RLAlgorithm
 from garage.sampler import OffPolicyVectorizedSampler
-
+from tqdm import tqdm
 
 class OffPolicyRLAlgorithm(RLAlgorithm):
     """This class implements OffPolicyRLAlgorithm for off-policy RL algorithms.
@@ -72,7 +72,8 @@ class OffPolicyRLAlgorithm(RLAlgorithm):
         last_return = None
 
         for epoch in runner.step_epochs():
-            for cycle in range(self.n_epoch_cycles):
+            print('Running Epoch #', epoch)
+            for cycle in tqdm(range(self.n_epoch_cycles), ncols=80):
                 runner.step_path = runner.obtain_samples(
                     runner.step_itr, batch_size)
                 last_return = self.train_once(runner.step_itr,
