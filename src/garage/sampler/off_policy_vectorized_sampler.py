@@ -93,6 +93,7 @@ class OffPolicyVectorizedSampler(BatchSampler):
             obs_normalized = tensor_utils.normalize_pixel_batch(
                 self.env_spec, input_obses)
             if self.algo.es:
+                # epsilon decays every time getting actions
                 actions, agent_infos = self.algo.es.get_actions(
                     itr, obs_normalized, self.algo.policy)
             else:

@@ -202,7 +202,7 @@ class DQN(OffPolicyRLAlgorithm):
                 mean100ep_rewards = round(
                     np.mean(self.episode_rewards[-100:]), 1)
                 mean100ep_qf_loss = np.mean(self.episode_qf_losses[-100:])
-                tabular.record('Epoch', (itr + 1) / self.n_epoch_cycles)
+                tabular.record('Epoch', (itr + 1) / self.n_epoch_cycles - 1)
                 tabular.record('AverageReturn', np.mean(self.episode_rewards))
                 tabular.record('StdReturn', np.std(self.episode_rewards))
                 # tabular.record('Episode100RewardMean', mean100ep_rewards)
@@ -210,6 +210,7 @@ class DQN(OffPolicyRLAlgorithm):
                                # mean100ep_qf_loss)
                 # GDP particular:
                 tabular.record('GDPEpisodeReturn', self.episode_rewards[-1])
+                tabular.record('Epsilon', self.es._epsilon)
         return last_average_return
 
     @overrides
