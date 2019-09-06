@@ -197,7 +197,7 @@ class DQN(OffPolicyRLAlgorithm):
             if itr % self.target_network_update_freq == 0:
                 self._qf_update_ops()
 
-        if itr % self.n_epoch_cycles == 0:
+        if (itr + 1) % self.n_epoch_cycles == 0:
             if self.evaluate:
                 mean100ep_rewards = round(
                     np.mean(self.episode_rewards[-100:]), 1)
